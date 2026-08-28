@@ -1,19 +1,20 @@
 import { defineConfig } from 'vite';
-import { resolve } from 'node:path';
 
 export default defineConfig({
   root: 'site',
   publicDir: 'public',
   build: {
-    outDir: resolve(import.meta.dirname, 'dist/site'),
+    outDir: '../dist/site',
     emptyOutDir: true,
     target: 'es2022',
     cssCodeSplit: true,
     rollupOptions: {
       input: {
-        home: resolve(import.meta.dirname, 'site/index.html'),
-        privacy: resolve(import.meta.dirname, 'site/privacy/index.html'),
-        terms: resolve(import.meta.dirname, 'site/terms/index.html'),
+        home: 'index.html',
+        notFound: '404.html',
+        demo: 'demo/index.html',
+        privacy: 'privacy/index.html',
+        terms: 'terms/index.html',
       },
     },
   },

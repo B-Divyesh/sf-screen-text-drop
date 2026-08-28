@@ -1,47 +1,38 @@
-# Screen Text Drop v0.1.1 handoff
+# Screen Text Drop repair handoff
 
-## Independent verification outcome (2026-08-28)
+## Repair scope
 
-**FAIL — candidate `6b29ed4e13c10e3f5ffc6663fd312d539cb6de75` must not release.** Independent QA found a missing required `.factory/claims.json`, no one-click sample-data demo sandbox, a failing `npx tsc --noEmit`, Tauri billing CORS incompatibility, and deployment policy/404 defects. The deployed URL was hash-confirmed as this candidate, so this is not a stale or deployment-only mismatch. See [verification-1.md](verification-1.md) for exact commands, evidence, passing checks, severity, and remediation. No product code was changed during verification.
+Repaired every finding in independent verification report `verification-1.md` for candidate `6b29ed4`.
 
-## What was built
+- Added `/demo/`, reached by the first-screen **Try it with sample data** action. It has a realistic support-handoff sample, an interactive cleanup result, persistent **Demo — sample data, nothing is saved** banner, Reset demo, Start for real, and only the `demo:screen-text-drop:sample` storage key. The desktop app now has **Load sample project** too.
+- Added `.factory/claims.json`, `.factory/demo.md`, and exact Playwright claim coverage for sample behavior, isolation, offline demo reload, same-origin demo networking, and the desktop sample.
+- Rewrote the first screen to the plain-language headline “Turn screen regions into text.” and named the desktop audience and first action.
+- Fixed `npx tsc --noEmit` by using Vite-relative inputs/output directories and a compatible axe Page cast; added `npm run lint`.
+- Moved packaged-app license verification to the Rust `verify_license` command using `reqwest`, so Linux/Windows Tauri webviews never need billing API CORS permission. `tests/license.test.ts` proves that the Tauri branch invokes Rust and does not call browser `fetch`.
+- Added `staticwebapp.config.json` with CSP, Permissions-Policy, strict referrer policy, immutable asset caching, and a genuine `404.html` response override. The static deployment must publish `dist/site` for those rules to take effect.
+- Added route metadata (canonical, description, Open Graph/Twitter) on landing, demo, privacy, and terms; added a sitemap demo entry; sized visible navigation/footer controls to 44px; and added `scripts/verify-url.sh`.
 
-- Tauri 2 desktop application with a tray menu and `Cmd/Ctrl + Shift + 2` global hotkey.
-- Native primary-display screen capture, full-screen pointer or keyboard region selection, and screenshot paste/import fallback.
-- Fully local OCR using bundled Tesseract.js WASM and English, Spanish, and German `tessdata_fast` packs. Captures exist only in memory and are discarded after recognition.
-- Editable output, paragraph/code/table cleanup, plain-text/Markdown formatting, and native clipboard copy.
-- Free English paragraph flow plus a $12 one-time Pro license for specialist cleanup, Markdown, and extra language packs. Checkout, returned-token storage, daily verification cache, optimistic offline behavior, invalid-license notice, and paste-to-restore follow the Sociobot billing contract.
-- Product-specific night-market neon UI for the app and responsive landing site, including an original generated/optimized hero, privacy/terms pages, OS-aware download action, checksum-verifying shell/PowerShell installers, offline service worker, and immutable asset caching.
-- GitHub Actions release matrix for macOS Apple silicon + Intel, Windows x64, and Linux x64; final publish job creates `SHA256SUMS` and `latest.json` and attaches all bundles to a GitHub Release.
+## Verification evidence
 
-## Verification
+Run on 2026-08-28 in a fresh `npm ci` install:
 
-- `npm test`: pass — 3 unit tests and 4 Playwright tests across desktop Chromium and a 390 px mobile viewport; zero serious/critical axe violations and zero page console errors.
-- `npm run build`: pass — `dist/site/index.html` and `dist/app/index.html` produced.
-- `cargo check --manifest-path src-tauri/Cargo.toml`: pass.
-- `npm run tauri -- build --bundles deb`: pass; generated a 13 MB Debian package.
-- Offline OCR smoke: a generated 900 × 260 screenshot was imported, selected, and recognized as `PRIVATE TEXT` using only the bundled worker/core/model.
-- Lighthouse 12.8.2 mobile: Performance **100**, Accessibility **100**, Best Practices **96**, SEO **100**; LCP **1.1 s**, CLS **0**, TBT **0 ms**.
-- Static first load: 3.8 KB JS, 12.5 KB CSS, 63 KB hero WebP; all below budget. No runtime font, script, analytics, or OCR CDN.
-- Release tag `v0.1.1` completed successfully as workflow run `33157815657`. The public release contains both DMGs, MSI/EXE, AppImage/DEB, `SHA256SUMS`, and valid `latest.json` entries for all four platform keys.
-- Release verification: downloaded `macos-arm64-Screen-Text-Drop_0.1.1_aarch64.dmg`; SHA256 `81b586e6f352bea9fad77e3671eadb7e09f3fd9e931f630c9df7d6c419fec620` exactly matched `latest.json`.
-- `npm audit`: zero vulnerabilities.
+- `npm ci` — 72 packages installed; `npm audit --omit=dev --audit-level=high` — 0 vulnerabilities.
+- `npm test` — pass: 4 Vitest tests; Playwright: 11 passed, 5 intentionally skipped mobile duplicates of desktop-only claim or desktop-app checks. Desktop and 390×844 responsive browser coverage passed. Desktop axe found no serious/critical violations; no monitored browser console errors.
+- `npm run lint` and `npx tsc --noEmit` — pass.
+- `npm run build` — pass. `dist/app` and `dist/site` produced. Site JS is 4,530 bytes (1,940 gzip), CSS is 15,059 bytes (4,090 gzip), and mobile hero WebP is 24,822 bytes.
+- All claim commands in `.factory/claims.json` pass through `npm test`; the five tagged tests run against the fresh demo entry point in the desktop browser project.
+- `scripts/verify-url.sh http://127.0.0.1:4173/` and `/demo/` — pass for title, lang, main, one h1, and image alt attributes.
+- Static response policy is present in `dist/site/staticwebapp.config.json`: CSP, Permissions-Policy, immutable `/assets/*` cache rule, and 404 status override all validated with `jq`.
+- `cargo check --manifest-path src-tauri/Cargo.toml` remains environment-blocked here because `glib-2.0.pc` is not installed. This is the same host prerequisite recorded by the verifier; the existing Ubuntu release workflow installs `libwebkit2gtk-4.1-dev` and related packages before building.
 
-## Known gaps
+## Deployment and release
 
-- v1 captures the primary display. Image paste/import covers text visible on another display; automatic multi-monitor selection is a follow-up.
-- Binaries are unsigned until owner certificates are supplied, so macOS Gatekeeper and Windows SmartScreen show their standard warnings. The site and README disclose this.
-- OCR quality depends on source contrast and scale. The app reports an actionable empty result and allows a tighter retry.
-- The one-time product and production return URL still need final registration in the Sociobot billing control plane; no product ID is hardcoded.
+Artifact class remains **Tauri 2 desktop app plus static landing site**. Build the landing with `npm run build:site` and publish `dist/site`; its checked-in `staticwebapp.config.json` is required for the live headers, cache behavior, and 404 response.
 
-## Needs operator action
+The existing tag-driven GitHub Actions workflow remains the installer release path. It builds unsigned macOS arm64/x64, Windows x64, and Linux x64 artifacts and publishes checksums/manifest. No release tag was created for this repair.
 
-1. Register `screen-text-drop` as a $12 one-time product with return URL `https://screen-text-drop.sociobot.in/?license={token}` in Sociobot billing.
-2. Configure deployment with build command `npm run build:site` and publish directory `dist/site`.
-3. For signed builds, add macOS secrets `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`; add Windows secrets `WINDOWS_CERT_PFX`, `WINDOWS_CERT_PASSWORD`, then add the corresponding signing commands to the release workflow. The current workflow deliberately expects no signing secrets and produces unsigned packages.
+## Known gaps / operator action
 
-## Next steps
-
-- Add cursor-aware multi-display capture and an OS settings deep link for denied permissions.
-- Add more optional `tessdata_fast` language packs after measuring installer growth.
-- Submit the generated MSI metadata to winget after signing is available.
+- This worker has no `glib-2.0` development package, so it cannot complete a local Tauri bundle check. Use the existing release workflow for platform bundles.
+- Binaries remain unsigned. Before a signed release, provide `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`, `WINDOWS_CERT_PFX`, and `WINDOWS_CERT_PASSWORD`, then add the corresponding signing steps.
+- After static deployment, verify live `/does-not-exist` returns HTTP 404 and live headers include CSP, Permissions-Policy, and immutable cache policy for `/assets/*`; those cannot be emulated by Vite preview.

@@ -1,11 +1,10 @@
 import { defineConfig } from 'vite';
-import { resolve } from 'node:path';
 
 export default defineConfig({
   root: 'app',
   publicDir: 'public',
   build: {
-    outDir: resolve(import.meta.dirname, 'dist/app'),
+    outDir: '../dist/app',
     emptyOutDir: true,
     target: 'es2022',
   },

@@ -4,6 +4,13 @@ use tauri::{Emitter, Manager};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize, Serialize)]
+struct LicenseVerdict {
+    valid: bool,
+    reason: String,
+}
 
 #[tauri::command]
 fn capture_primary_screen() -> Result<String, String> {
@@ -22,6 +29,24 @@ fn copy_text(text: String) -> Result<(), String> {
     arboard::Clipboard::new()
         .and_then(|mut clipboard| clipboard.set_text(text))
         .map_err(|error| error.to_string())
+}
+
+// License checks run in the Rust core so packaged Tauri webviews never rely on
+// the billing API granting CORS to a platform-specific tauri.localhost origin.
+#[tauri::command]
+async fn verify_license(token: String) -> Result<LicenseVerdict, String> {
+    let response = reqwest::Client::new()
+        .get("https://api.sociobot.in/api/v1/products/screen-text-drop/verify")
+        .query(&[("license", token)])
+        .send()
+        .await
+        .map_err(|error| format!("License verification is unavailable: {error}"))?;
+    if !response.status().is_success() {
+        return Err(format!("License verification returned {}", response.status()));
+    }
+    response.json::<LicenseVerdict>()
+        .await
+        .map_err(|error| format!("License verification returned an invalid response: {error}"))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -60,7 +85,7 @@ pub fn run() {
             std::mem::forget(tray);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![capture_primary_screen, copy_text])
+        .invoke_handler(tauri::generate_handler![capture_primary_screen, copy_text, verify_license])
         .run(tauri::generate_context!())
         .expect("error while running Screen Text Drop");
 }

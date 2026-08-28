@@ -1,8 +1,8 @@
 # Screen Text Drop
 
-Screen Text Drop is a tiny, privacy-first desktop utility that turns a selected screen region into clean text. Press `Ctrl/Cmd + Shift + 2`, drag around text, choose paragraph/code/table cleanup, then copy plain text or Markdown. Screenshots and OCR never leave the device.
+Screen Text Drop is a desktop tool for turning a selected screen region into text. It is for people who need to reuse text shown in a PDF, video, remote desktop, image, or non-selectable application.
 
-It is for people who regularly retype text from locked PDFs, videos, remote desktops, images, or applications that do not expose selectable text.
+Try the sample workspace at [screen-text-drop.sociobot.in/demo/](https://screen-text-drop.sociobot.in/demo/). It changes a supplied support handoff between paragraph, code, and table output. The demo uses its own `demo:` browser-storage key, does not save app data, and works offline after its first visit.
 
 ## Install
 
@@ -25,6 +25,7 @@ The v1 binaries are unsigned. On macOS, right-click the downloaded app/package a
 - Tauri 2 app for macOS (Apple silicon and Intel), Windows, and Linux
 - Native primary-display capture, tray menu, and global hotkey
 - Region selection plus screenshot paste/import fallback
+- Load sample project on the first screen for a safe walkthrough
 - Bundled Tesseract.js WASM and English, Spanish, and German models
 - Paragraph, code, and table cleanup; plain text and Markdown copy
 - Free tier with English paragraph OCR and copy
@@ -52,6 +53,10 @@ Production desktop artifacts are built only by [the release workflow](.github/wo
 
 ## Privacy and licensing
 
-Capture pixels remain in memory only until OCR completes. License verification sends only the pasted license token to `api.sociobot.in` and is cached for 24 hours. See [Privacy](site/privacy/index.html), [Terms](site/terms/index.html), and [third-party OCR notices](THIRD_PARTY_NOTICES.md).
+Read the complete [Privacy policy](site/privacy/index.html), [Terms](site/terms/index.html), and [third-party OCR notices](THIRD_PARTY_NOTICES.md). The app verifies a pasted Pro license through the Sociobot billing API; packaged desktop builds perform that request in the Rust core instead of the browser webview.
+
+## Demo and claim checks
+
+The demo entry point, sample, reset behavior, and isolated storage are documented in [.factory/demo.md](.factory/demo.md). Every visitor-facing demo claim and its exact regression command are listed in [.factory/claims.json](.factory/claims.json). Run all claim checks with `npm test` or individually with the commands in that manifest.
 
 Source code is MIT licensed. Tesseract components and language data retain their Apache-2.0 licenses.

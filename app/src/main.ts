@@ -31,6 +31,7 @@ app.innerHTML = `
           <span>Capture region</span><kbd>${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} ⇧ 2</kbd>
         </button>
         <label class="import-button" for="image-file">Use an image</label>
+        <button class="sample-button" id="load-sample" type="button">Load sample project</button>
         <input class="visually-hidden" id="image-file" type="file" accept="image/png,image/jpeg,image/webp" />
       </div>
       <p class="hint">Tip: paste a screenshot here with ${navigator.platform.includes('Mac') ? '⌘V' : 'Ctrl+V'}.</p>
@@ -209,6 +210,12 @@ async function captureScreen() {
 }
 
 document.querySelector('#capture')!.addEventListener('click', captureScreen);
+document.querySelector('#load-sample')!.addEventListener('click', () => {
+  preset = 'paragraph';
+  document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((item) => item.setAttribute('aria-checked', String(item.dataset.preset === 'paragraph')));
+  setOutput('The route parser strips the utm_source value. Keep the query string when you copy the support link.');
+  announce('Sample project loaded. This sample is not saved.');
+});
 document.querySelector<HTMLInputElement>('#image-file')!.addEventListener('change', async (event) => {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (file) await openCapture(URL.createObjectURL(file));

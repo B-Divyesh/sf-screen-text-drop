@@ -1,6 +1,7 @@
 const KEY = 'sb_license:screen-text-drop';
 const VERDICT_KEY = `${KEY}:verdict`;
 const API = 'https://api.sociobot.in/api/v1/products/screen-text-drop';
+const isTauri = '__TAURI_INTERNALS__' in window;
 
 export type LicenseState = { unlocked: boolean; notice?: string };
 
@@ -40,9 +41,12 @@ export async function verifyLicense(force = false): Promise<LicenseState> {
     }
   } catch { /* verify again */ }
   try {
-    const response = await fetch(`${API}/verify?license=${encodeURIComponent(token)}`);
-    if (!response.ok) throw new Error('verification unavailable');
-    const verdict = await response.json() as { valid: boolean };
+    const verdict = isTauri
+      ? await import('@tauri-apps/api/core').then(({ invoke }) => invoke<{ valid: boolean }>('verify_license', { token }))
+      : await fetch(`${API}/verify?license=${encodeURIComponent(token)}`).then(async (response) => {
+        if (!response.ok) throw new Error('verification unavailable');
+        return response.json() as Promise<{ valid: boolean }>;
+      });
     localStorage.setItem(VERDICT_KEY, JSON.stringify({ valid: verdict.valid, checkedAt: Date.now() }));
     return verdict.valid
       ? { unlocked: true }

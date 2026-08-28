@@ -1,0 +1,37 @@
+[
+  {
+    "id": "sample-demo",
+    "claim": "Try it with sample data",
+    "where": "landing page, demo page, README",
+    "test": "npx playwright test --grep @claim:sample-demo",
+    "sandbox": "fresh browser context visits /demo/, changes the supplied cleanup sample, and observes the changed output"
+  },
+  {
+    "id": "demo-isolated",
+    "claim": "Demo — sample data, nothing is saved",
+    "where": "demo banner, landing page",
+    "test": "npx playwright test --grep @claim:demo-isolated",
+    "sandbox": "fresh browser context verifies demo: storage is used, sb_license:screen-text-drop is untouched, then resets the demo"
+  },
+  {
+    "id": "demo-offline",
+    "claim": "The demo works offline after the first visit",
+    "where": "README",
+    "test": "npx playwright test --grep @claim:demo-offline",
+    "sandbox": "fresh browser context loads /demo/, goes offline, reloads, and observes its supplied sample"
+  },
+  {
+    "id": "demo-local-network",
+    "claim": "The demo sends no data to another service",
+    "where": "README",
+    "test": "npx playwright test --grep @claim:demo-local-network",
+    "sandbox": "fresh browser context records every request during the demo flow and allows only same-origin requests"
+  },
+  {
+    "id": "desktop-sample",
+    "claim": "The desktop app loads a sample project",
+    "where": "app first screen, README",
+    "test": "npx playwright test --grep @claim:desktop-sample",
+    "sandbox": "browser app entry loads its shipped sample project and asserts the usable output"
+  }
+]
