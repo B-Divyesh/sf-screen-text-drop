@@ -19,7 +19,9 @@
 - Offline OCR smoke: a generated 900 × 260 screenshot was imported, selected, and recognized as `PRIVATE TEXT` using only the bundled worker/core/model.
 - Lighthouse 12.8.2 mobile: Performance **100**, Accessibility **100**, Best Practices **96**, SEO **100**; LCP **1.1 s**, CLS **0**, TBT **0 ms**.
 - Static first load: 3.8 KB JS, 12.5 KB CSS, 63 KB hero WebP; all below budget. No runtime font, script, analytics, or OCR CDN.
-- Release tag `v0.1.0` completed successfully as workflow run `33156867311`; final keyboard and caching polish ships as `v0.1.1`.
+- Release tag `v0.1.1` completed successfully as workflow run `33157815657`. The public release contains both DMGs, MSI/EXE, AppImage/DEB, `SHA256SUMS`, and valid `latest.json` entries for all four platform keys.
+- Release verification: downloaded `macos-arm64-Screen-Text-Drop_0.1.1_aarch64.dmg`; SHA256 `81b586e6f352bea9fad77e3671eadb7e09f3fd9e931f630c9df7d6c419fec620` exactly matched `latest.json`.
+- `npm audit`: zero vulnerabilities.
 
 ## Known gaps
 
