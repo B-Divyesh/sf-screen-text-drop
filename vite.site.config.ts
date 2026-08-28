@@ -5,15 +5,15 @@ export default defineConfig({
   root: 'site',
   publicDir: 'public',
   build: {
-    outDir: resolve(__dirname, 'dist/site'),
+    outDir: resolve(import.meta.dirname, 'dist/site'),
     emptyOutDir: true,
     target: 'es2022',
     cssCodeSplit: true,
     rollupOptions: {
       input: {
-        home: resolve(__dirname, 'site/index.html'),
-        privacy: resolve(__dirname, 'site/privacy/index.html'),
-        terms: resolve(__dirname, 'site/terms/index.html'),
+        home: resolve(import.meta.dirname, 'site/index.html'),
+        privacy: resolve(import.meta.dirname, 'site/privacy/index.html'),
+        terms: resolve(import.meta.dirname, 'site/terms/index.html'),
       },
     },
   },

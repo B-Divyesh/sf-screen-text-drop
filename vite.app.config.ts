@@ -5,7 +5,7 @@ export default defineConfig({
   root: 'app',
   publicDir: 'public',
   build: {
-    outDir: resolve(__dirname, 'dist/app'),
+    outDir: resolve(import.meta.dirname, 'dist/app'),
     emptyOutDir: true,
     target: 'es2022',
   },

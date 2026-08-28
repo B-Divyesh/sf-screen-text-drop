@@ -1,6 +1,6 @@
 [package]
 name = "screen-text-drop"
-version = "0.1.0"
+version = "0.1.1"
 description = "Private, offline region-to-text utility"
 authors = ["Sociobot"]
 license = "MIT"
