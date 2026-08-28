@@ -29,10 +29,11 @@ Run on 2026-08-28 in a fresh `npm ci` install:
 
 Artifact class remains **Tauri 2 desktop app plus static landing site**. Build the landing with `npm run build:site` and publish `dist/site`; its checked-in `staticwebapp.config.json` is required for the live headers, cache behavior, and 404 response.
 
+Deployed the static output to production with Azure Static Web Apps CLI on 2026-08-28. Live verification at `https://screen-text-drop.sociobot.in/` found the deployed `index.html` SHA-256 exactly matches `dist/site/index.html`: `15f8a125707c765f80d7e249466609974c8748fd54eeff3f50797e4b8b0d39b9`. Live responses include CSP, Permissions-Policy, and strict referrer policy; the hashed JS asset has `Cache-Control: public, max-age=31536000, immutable`; `/does-not-exist` returns HTTP 404 with the designed page.
+
 The existing tag-driven GitHub Actions workflow remains the installer release path. It builds unsigned macOS arm64/x64, Windows x64, and Linux x64 artifacts and publishes checksums/manifest. No release tag was created for this repair.
 
 ## Known gaps / operator action
 
 - This worker has no `glib-2.0` development package, so it cannot complete a local Tauri bundle check. Use the existing release workflow for platform bundles.
 - Binaries remain unsigned. Before a signed release, provide `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`, `WINDOWS_CERT_PFX`, and `WINDOWS_CERT_PASSWORD`, then add the corresponding signing steps.
-- After static deployment, verify live `/does-not-exist` returns HTTP 404 and live headers include CSP, Permissions-Policy, and immutable cache policy for `/assets/*`; those cannot be emulated by Vite preview.
