@@ -1,0 +1,11 @@
+{
+  "slug": "screen-text-drop",
+  "title": "Screen Text Drop",
+  "territory": "utilities",
+  "user": "Desktop users who need to turn a chosen region of their screen into clean local text or a structured snippet without uploading a screenshot.",
+  "smallest_useful_product": "Tray tool with one hotkey, region capture, bundled offline OCR language packs, cleanup presets for code/table/paragraph, and paste/Markdown output.",
+  "success_measure": "For a supplied set of screenshots, users successfully paste usable text in under 15 seconds in 80% of trials without network access.",
+  "artifact_class": "desktop-app",
+  "monetization": "one-time",
+  "constraints": "No capture retention by default; disclose OCR model licenses and language-pack size; respect OS screen-recording permissions."
+}
