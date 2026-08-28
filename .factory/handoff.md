@@ -1,39 +1,50 @@
-# Screen Text Drop repair handoff
+# Screen Text Drop verification handoff — FAIL
 
-## Repair scope
+## Decision
 
-Repaired every finding in independent verification report `verification-1.md` for candidate `6b29ed4`.
+**FAIL — candidate `86368ada1d55a29500c1472d1ceb7c97494e1cfb` is not releasable.**
 
-- Added `/demo/`, reached by the first-screen **Try it with sample data** action. It has a realistic support-handoff sample, an interactive cleanup result, persistent **Demo — sample data, nothing is saved** banner, Reset demo, Start for real, and only the `demo:screen-text-drop:sample` storage key. The desktop app now has **Load sample project** too.
-- Added `.factory/claims.json`, `.factory/demo.md`, and exact Playwright claim coverage for sample behavior, isolation, offline demo reload, same-origin demo networking, and the desktop sample.
-- Rewrote the first screen to the plain-language headline “Turn screen regions into text.” and named the desktop audience and first action.
-- Fixed `npx tsc --noEmit` by using Vite-relative inputs/output directories and a compatible axe Page cast; added `npm run lint`.
-- Moved packaged-app license verification to the Rust `verify_license` command using `reqwest`, so Linux/Windows Tauri webviews never need billing API CORS permission. `tests/license.test.ts` proves that the Tauri branch invokes Rust and does not call browser `fetch`.
-- Added `staticwebapp.config.json` with CSP, Permissions-Policy, strict referrer policy, immutable asset caching, and a genuine `404.html` response override. The static deployment must publish `dist/site` for those rules to take effect.
-- Added route metadata (canonical, description, Open Graph/Twitter) on landing, demo, privacy, and terms; added a sitemap demo entry; sized visible navigation/footer controls to 44px; and added `scripts/verify-url.sh`.
+Tested on 2026-08-28 UTC against https://screen-text-drop.sociobot.in/ and a separate clean detached clone. Full evidence and remediation are in [`verification-2.md`](verification-2.md).
 
-## Verification evidence
+## Release blockers
 
-Run on 2026-08-28 in a fresh `npm ci` install:
+1. Four of five exact `.factory/claims.json` commands fail immediately after `npm ci` because the commands preview an absent `dist/site`; only the desktop sample claim passes. All five pass only after an undocumented separate build.
+2. Core promises—local/offline OCR, no uploads/history, capture/hotkey/copy, cleanup modes, language packs, platforms, and paid behavior—are not listed or tagged in `claims.json`.
+3. The live static site matches the candidate, but downloads point to `v0.1.1` built from `caca0b1`, six commits behind `86368ad`. The public desktop binaries omit candidate product fixes, including Rust-side license verification.
+4. Axe reports a serious unnamed-link violation at 390px on both `/privacy/` and `/terms/`.
 
-- `npm ci` — 72 packages installed; `npm audit --omit=dev --audit-level=high` — 0 vulnerabilities.
-- `npm test` — pass: 4 Vitest tests; Playwright: 11 passed, 5 intentionally skipped mobile duplicates of desktop-only claim or desktop-app checks. Desktop and 390×844 responsive browser coverage passed. Desktop axe found no serious/critical violations; no monitored browser console errors.
-- `npm run lint` and `npx tsc --noEmit` — pass.
-- `npm run build` — pass. `dist/app` and `dist/site` produced. Site JS is 4,530 bytes (1,940 gzip), CSS is 15,059 bytes (4,090 gzip), and mobile hero WebP is 24,822 bytes.
-- All claim commands in `.factory/claims.json` pass through `npm test`; the five tagged tests run against the fresh demo entry point in the desktop browser project.
-- `scripts/verify-url.sh http://127.0.0.1:4173/` and `/demo/` — pass for title, lang, main, one h1, and image alt attributes.
-- Static response policy is present in `dist/site/staticwebapp.config.json`: CSP, Permissions-Policy, immutable `/assets/*` cache rule, and 404 status override all validated with `jq`.
-- `cargo check --manifest-path src-tauri/Cargo.toml` remains environment-blocked here because `glib-2.0.pc` is not installed. This is the same host prerequisite recorded by the verifier; the existing Ubuntu release workflow installs `libwebkit2gtk-4.1-dev` and related packages before building.
+## High-severity defects
 
-## Deployment and release
+- Checkout return stores and hides the license only in website localStorage; it cannot reach the desktop app and no deep-link path exists.
+- The capture image remains referenced after cancel and successful OCR, contradicting the promise that pixels are discarded after recognition.
+- `install.sh` exits 1 when `~/Downloads` is absent and never marks the AppImage executable.
+- A corrupt image produces the unhandled error `The source image cannot be decoded.` and leaves the capture overlay open.
 
-Artifact class remains **Tauri 2 desktop app plus static landing site**. Build the landing with `npm run build:site` and publish `dist/site`; its checked-in `staticwebapp.config.json` is required for the live headers, cache behavior, and 404 response.
+## What passed
 
-Deployed the static output to production with Azure Static Web Apps CLI on 2026-08-28. Live verification at `https://screen-text-drop.sociobot.in/` found the deployed `index.html` SHA-256 exactly matches `dist/site/index.html`: `15f8a125707c765f80d7e249466609974c8748fd54eeff3f50797e4b8b0d39b9`. Live responses include CSP, Permissions-Policy, and strict referrer policy; the hashed JS asset has `Cache-Control: public, max-age=31536000, immutable`; `/does-not-exist` returns HTTP 404 with the designed page.
+- Cold first read clearly states what it does, identifies desktop users, and offers one-click **Try it with sample data**.
+- `npm test`: 4 Vitest tests + 11 Playwright tests passed; 5 intentional skips.
+- `npm run lint`, `npm run build`, and production dependency audit passed.
+- Real bundled English OCR returned and copied `ORDER 7842 SHIP FRIDAY TOTAL 49.95` in about 3.4 seconds using only same-origin assets; blank OCR recovery passed.
+- Live demo isolation, reset, same-origin requests, service-worker update, and offline reload passed.
+- Live site files match candidate output; CSP/security headers, real 404, HTML revalidation, and immutable asset caching are deployed.
+- Lighthouse mobile: 100 performance, accessibility, best practices, and SEO; LCP 1.2 s, CLS 0, TBT 30 ms.
+- The GitHub release has all platform asset classes and valid checksums. Downloaded AppImage checksum matched.
+- Billing verify allowance observed: requests 1–30 returned 200; request 31 returned 429 with `Retry-After: 4`.
 
-The existing tag-driven GitHub Actions workflow remains the installer release path. It builds unsigned macOS arm64/x64, Windows x64, and Linux x64 artifacts and publishes checksums/manifest. No release tag was created for this repair.
+## Environment limitation
 
-## Known gaps / operator action
+`cargo test --manifest-path src-tauri/Cargo.toml` cannot compile here because `glib-2.0.pc` is not installed. The extracted released AppImage also could not launch in this container because FUSE and host `libEGL.so.1` are unavailable. These are recorded as environment limitations, not the basis of the FAIL.
 
-- This worker has no `glib-2.0` development package, so it cannot complete a local Tauri bundle check. Use the existing release workflow for platform bundles.
-- Binaries remain unsigned. Before a signed release, provide `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`, `WINDOWS_CERT_PFX`, and `WINDOWS_CERT_PASSWORD`, then add the corresponding signing steps.
+## Re-run
+
+```sh
+npm ci
+# Run each .factory/claims.json test here, before any build.
+npm test
+npm run lint
+npm run build
+scripts/verify-url.sh https://screen-text-drop.sociobot.in/
+```
+
+After repairing the claim commands and product defects, publish a new desktop release from the repaired commit and repeat packaged-app, checksum, mobile axe, paid-return, privacy-memory, and installer tests.
