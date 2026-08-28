@@ -81,7 +81,7 @@ app.innerHTML = `
     <img id="capture-image" alt="Your captured screen; drag to select a text region" draggable="false" />
     <div class="capture-shade" aria-hidden="true"></div>
     <div class="selection" id="selection" aria-hidden="true"></div>
-    <div class="capture-instructions"><strong>Drag around the text</strong><span>Esc to cancel · Enter to read selection</span></div>
+    <div class="capture-instructions"><strong>Drag around the text</strong><span>Arrows move · Shift + arrows resize · Enter reads · Esc cancels</span></div>
   </div>
 
   <dialog id="license-dialog" aria-labelledby="license-title">
@@ -155,15 +155,25 @@ async function cropAndRead() {
 
 async function openCapture(dataUrl: string) {
   sourceImage = dataUrl;
-  start = end = null;
-  selection.style.display = 'none';
   captureImage.src = dataUrl;
   layer.hidden = false;
   if (isTauri) {
     const { getCurrentWindow } = await import('@tauri-apps/api/window');
     await getCurrentWindow().setFullscreen(true);
   }
+  start = { x: window.innerWidth * .2, y: window.innerHeight * .2 };
+  end = { x: window.innerWidth * .8, y: window.innerHeight * .8 };
+  paintSelection();
   layer.focus();
+}
+
+function paintSelection() {
+  if (!start || !end) return;
+  selection.style.display = 'block';
+  selection.style.left = `${Math.min(start.x, end.x)}px`;
+  selection.style.top = `${Math.min(start.y, end.y)}px`;
+  selection.style.width = `${Math.abs(end.x - start.x)}px`;
+  selection.style.height = `${Math.abs(end.y - start.y)}px`;
 }
 
 async function closeCapture() {
@@ -219,15 +229,23 @@ layer.addEventListener('pointerdown', (event) => {
 layer.addEventListener('pointermove', (event) => {
   if (!start) return;
   end = { x: event.clientX, y: event.clientY };
-  selection.style.left = `${Math.min(start.x, end.x)}px`;
-  selection.style.top = `${Math.min(start.y, end.y)}px`;
-  selection.style.width = `${Math.abs(end.x - start.x)}px`;
-  selection.style.height = `${Math.abs(end.y - start.y)}px`;
+  paintSelection();
 });
 layer.addEventListener('pointerup', (event) => { if (start) { end = { x: event.clientX, y: event.clientY }; void cropAndRead(); } });
 window.addEventListener('keydown', (event) => {
   if (!layer.hidden && event.key === 'Escape') { void closeCapture(); announce('Capture cancelled.'); }
   if (!layer.hidden && event.key === 'Enter') void cropAndRead();
+  if (!layer.hidden && start && end && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+    event.preventDefault();
+    const x = event.key === 'ArrowLeft' ? -10 : event.key === 'ArrowRight' ? 10 : 0;
+    const y = event.key === 'ArrowUp' ? -10 : event.key === 'ArrowDown' ? 10 : 0;
+    if (event.shiftKey) end = { x: Math.max(0, Math.min(innerWidth, end.x + x)), y: Math.max(0, Math.min(innerHeight, end.y + y)) };
+    else {
+      const nextStart = { x: start.x + x, y: start.y + y }, nextEnd = { x: end.x + x, y: end.y + y };
+      if (nextStart.x >= 0 && nextStart.y >= 0 && nextEnd.x <= innerWidth && nextEnd.y <= innerHeight) { start = nextStart; end = nextEnd; }
+    }
+    paintSelection();
+  }
 });
 
 document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) => button.addEventListener('click', () => {
@@ -236,6 +254,13 @@ document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) =
   preset = next;
   document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((item) => item.setAttribute('aria-checked', String(item === button)));
 }));
+document.querySelector('.segments')!.addEventListener('keydown', (event) => {
+  if (!(event instanceof KeyboardEvent) || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+  event.preventDefault();
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-preset]')];
+  const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+  buttons[(current + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length].focus();
+});
 
 document.querySelector<HTMLInputElement>('#markdown')!.addEventListener('change', (event) => {
   const input = event.target as HTMLInputElement;
