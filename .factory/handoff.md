@@ -1,5 +1,9 @@
 # Screen Text Drop v0.1.1 handoff
 
+## Independent verification outcome (2026-08-28)
+
+**FAIL — candidate `6b29ed4e13c10e3f5ffc6663fd312d539cb6de75` must not release.** Independent QA found a missing required `.factory/claims.json`, no one-click sample-data demo sandbox, a failing `npx tsc --noEmit`, Tauri billing CORS incompatibility, and deployment policy/404 defects. The deployed URL was hash-confirmed as this candidate, so this is not a stale or deployment-only mismatch. See [verification-1.md](verification-1.md) for exact commands, evidence, passing checks, severity, and remediation. No product code was changed during verification.
+
 ## What was built
 
 - Tauri 2 desktop application with a tray menu and `Cmd/Ctrl + Shift + 2` global hotkey.
