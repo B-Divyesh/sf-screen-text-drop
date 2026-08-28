@@ -1,0 +1,26 @@
+[package]
+name = "screen-text-drop"
+version = "0.1.0"
+description = "Private, offline region-to-text utility"
+authors = ["Sociobot"]
+license = "MIT"
+repository = "https://github.com/B-Divyesh/sf-screen-text-drop"
+edition = "2021"
+
+[lib]
+name = "screen_text_drop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-opener = "2"
+screenshots = "0.8.10"
+image = "0.24.9"
+base64 = "0.22"
+arboard = "3.6"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
