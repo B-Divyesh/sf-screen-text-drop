@@ -56,6 +56,8 @@ Surfaces are opaque. No glassmorphism and no broad gradients. A subtle code-auth
 
 - `assets/src/hero-night-market.png`: original AI-generated editorial night-market scene, used to establish the product world—not as evidence of app output.
 - `site/public/assets/hero-night-market.webp`: optimized responsive source, ≤300 KB.
+- `site/public/assets/social-preview.webp`: a 1200 × 630 center crop derived from the original hero for Open Graph and Twitter cards.
+- `site/public/favicon.svg` and `site/public/apple-touch-icon.png`: hand-authored crop-frame logo and a raster export of the same original mark.
 - Logo, crop marks, platform icons, privacy shield, and workflow diagrams are hand-authored inline SVG/CSS. No stock icons or third-party visual assets.
 
 ### Prompt sheet

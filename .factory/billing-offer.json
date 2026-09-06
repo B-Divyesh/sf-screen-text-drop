@@ -1,0 +1,17 @@
+{
+  "slug": "screen-text-drop",
+  "name": "Screen Text Drop Pro",
+  "price_minor": 1200,
+  "currency": "USD",
+  "price_type": "one_time_price",
+  "return_url": "https://screen-text-drop.sociobot.in/?license={token}",
+  "price_evidence": "Live Sociobot checkout displayed Screen Text Drop at $12.00 USD on 2026-09-06.",
+  "paid_features": [
+    "Code cleanup",
+    "Table cleanup",
+    "Markdown output",
+    "Spanish OCR data",
+    "German OCR data"
+  ],
+  "license_validation_path": "/api/v1/products/screen-text-drop/verify"
+}

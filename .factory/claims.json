@@ -1,37 +1,107 @@
 [
   {
     "id": "sample-demo",
-    "claim": "Try it with sample data",
+    "claim": "Visitors can try a realistic, populated sample in one click.",
     "where": "landing page, demo page, README",
     "test": "npx playwright test --grep @claim:sample-demo",
-    "sandbox": "fresh browser context visits /demo/, changes the supplied cleanup sample, and observes the changed output"
+    "sandbox": "a fresh browser opens /demo/, sees the populated support handoff, changes cleanup mode, and observes changed output"
   },
   {
     "id": "demo-isolated",
-    "claim": "Demo — sample data, nothing is saved",
-    "where": "demo banner, landing page",
+    "claim": "Demo sample changes are separate from real app and license data, and Reset demo restores the sample.",
+    "where": "demo banner, privacy copy, README",
     "test": "npx playwright test --grep @claim:demo-isolated",
-    "sandbox": "fresh browser context verifies demo: storage is used, sb_license:screen-text-drop is untouched, then resets the demo"
+    "sandbox": "a fresh context changes and resets the demo while asserting an unrelated real-data key and the license namespace are untouched"
   },
   {
     "id": "demo-offline",
-    "claim": "The demo works offline after the first visit",
+    "claim": "The demo works offline after the first visit.",
     "where": "README",
     "test": "npx playwright test --grep @claim:demo-offline",
-    "sandbox": "fresh browser context loads /demo/, goes offline, reloads, and observes its supplied sample"
+    "sandbox": "the test creates its own browser context, loads /demo/, waits for its service worker, goes offline, reloads, and observes the supplied sample"
   },
   {
     "id": "demo-local-network",
-    "claim": "The demo sends no data to another service",
-    "where": "README",
+    "claim": "The demo sends no data to another service.",
+    "where": "demo page, README",
     "test": "npx playwright test --grep @claim:demo-local-network",
-    "sandbox": "fresh browser context records every request during the demo flow and allows only same-origin requests"
+    "sandbox": "a fresh context records every request while changing the sample and asserts that every request is same-origin"
   },
   {
     "id": "desktop-sample",
-    "claim": "The desktop app loads a sample project",
+    "claim": "The desktop app loads a realistic sample project without saving it.",
     "where": "app first screen, README",
     "test": "npx playwright test --grep @claim:desktop-sample",
-    "sandbox": "browser app entry loads its shipped sample project and asserts the usable output"
+    "sandbox": "the browser app entry loads its shipped sample project and asserts the usable populated output and unsaved status"
+  },
+  {
+    "id": "local-ocr-copy-disposal",
+    "claim": "The app reads a selected image with bundled local OCR, copies the result, sends no capture to another origin, and discards capture pixels after use.",
+    "where": "landing page, app privacy note, privacy page, README",
+    "test": "npx playwright test --grep @claim:local-ocr-copy-disposal",
+    "sandbox": "a generated screenshot is selected and recognized with bundled worker, core, and English data; requests stay same-origin; clipboard output matches; the blob URL is revoked"
+  },
+  {
+    "id": "offline-installed",
+    "claim": "Installed OCR works without an internet connection.",
+    "where": "landing first-screen facts, app status, README",
+    "test": "npx playwright test --grep @claim:offline-installed",
+    "sandbox": "the generated-image OCR flow blocks every non-app origin and still produces and copies the expected text with bundled files"
+  },
+  {
+    "id": "no-history-tracking",
+    "claim": "The app creates no capture history or telemetry during OCR.",
+    "where": "landing page, app privacy note, privacy page, README",
+    "test": "npx playwright test --grep @claim:no-history-tracking",
+    "sandbox": "the complete generated-image OCR and copy flow records every request, requires same-origin traffic, and confirms app localStorage remains empty"
+  },
+  {
+    "id": "capture-hotkey",
+    "claim": "Ctrl/Cmd Shift 2 starts the user-initiated capture flow.",
+    "where": "landing how-it-works section, app first screen, README",
+    "test": "npx playwright test --grep @claim:capture-hotkey",
+    "sandbox": "the desktop browser app entry receives Ctrl+Shift+2, opens its image chooser fallback, and announces that installed builds use the same capture shortcut"
+  },
+  {
+    "id": "keyboard-region-selection",
+    "claim": "The region selector works with Arrow keys, Shift plus Arrow keys, Enter, and Escape.",
+    "where": "app capture instructions, README",
+    "test": "npx playwright test --grep @claim:keyboard-region-selection",
+    "sandbox": "a generated screenshot enters the selector; Arrow moves, Shift+Arrow resizes, Enter recognizes, and the recovery test covers Escape"
+  },
+  {
+    "id": "capture-recovery",
+    "claim": "Cancel, too-small selections, and corrupt images recover without retaining capture pixels or trapping the user.",
+    "where": "app errors, privacy page",
+    "test": "npx playwright test --grep @claim:capture-recovery",
+    "sandbox": "the app cancels and revokes a valid blob, shows a visible small-selection error, then handles a corrupt PNG without a page error or stuck overlay"
+  },
+  {
+    "id": "cleanup-presets",
+    "claim": "Paragraph, code, table, and Markdown cleanup produce reusable text.",
+    "where": "landing cleanup section, app, README",
+    "test": "npx vitest run --testNamePattern @claim:cleanup-presets",
+    "sandbox": "recorded OCR-like fixtures assert dehyphenated paragraphs, repaired code quotes, tabular columns, and complete Markdown output"
+  },
+  {
+    "id": "language-packs",
+    "claim": "English, Spanish, and German OCR language data is bundled at the disclosed sizes; Spanish and German require Pro.",
+    "where": "app language selector, pricing, README",
+    "test": "npx playwright test --grep @claim:language-packs",
+    "sandbox": "a cached valid fixture license selects Spanish and German, recognizes supplied words with both local models, records only same-origin requests, and measures each language file byte-for-byte"
+  },
+  {
+    "id": "pro-license-return",
+    "claim": "Pro costs $12 once, gates specialist features, accepts a returned license, and provides a visible browser-to-app transfer path.",
+    "where": "landing pricing, app license dialog, terms, README",
+    "test": "npx playwright test --grep @claim:pro-license-return",
+    "sandbox": "the test checks exact offer copy/link, returns a fixture token, strips it from the URL, copies it, proves free gating, verifies through a recorded valid API response, and selects a Pro feature"
+  },
+  {
+    "id": "linux-installer",
+    "claim": "The Linux one-line installer verifies SHA-256 and installs an executable command in a clean home.",
+    "where": "landing download, README",
+    "test": "npx vitest run --testNamePattern @claim:linux-installer",
+    "sandbox": "a temporary consumer home with no Downloads directory installs a local fixture AppImage through the real shell installer, compares bytes, checks executable mode, and runs it"
   }
 ]
