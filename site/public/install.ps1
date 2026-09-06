@@ -1,7 +1,9 @@
 $ErrorActionPreference = "Stop"
 $manifest = Invoke-RestMethod "https://github.com/B-Divyesh/sf-screen-text-drop/releases/latest/download/latest.json"
 $asset = $manifest.platforms.'windows-x64'
-$destination = Join-Path $env:USERPROFILE "Downloads\$($asset.name)"
+$downloadDirectory = Join-Path $env:USERPROFILE "Downloads"
+New-Item -ItemType Directory -Force -Path $downloadDirectory | Out-Null
+$destination = Join-Path $downloadDirectory $asset.name
 Invoke-WebRequest $asset.url -OutFile $destination
 $actual = (Get-FileHash $destination -Algorithm SHA256).Hash.ToLower()
 if ($actual -ne $asset.sha256.ToLower()) { Remove-Item $destination; throw "Checksum mismatch; nothing installed." }

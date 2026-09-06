@@ -10,6 +10,7 @@ let preset: Preset = 'paragraph';
 let markdown = false;
 let pro = cachedLicenseState().unlocked;
 let sourceImage = '';
+let sourceObjectUrl: string | null = null;
 let start: Point | null = null;
 let end: Point | null = null;
 
@@ -23,8 +24,8 @@ app.innerHTML = `
   </header>
   <main id="main" tabindex="-1">
     <section class="workbench" aria-labelledby="app-title">
-      <div class="eyebrow">One hotkey · no upload</div>
-      <h1 id="app-title">Take the text.<br><em>Leave the pixels.</em></h1>
+      <div class="eyebrow">Local screen OCR</div>
+      <h1 id="app-title">Turn a screen region <br>into <em>text.</em></h1>
       <p class="intro">Choose any region of your screen. Text is read on this device, cleaned, and ready to paste.</p>
       <div class="primary-actions">
         <button class="capture-button" id="capture" type="button">
@@ -46,9 +47,9 @@ app.innerHTML = `
         <div>
           <span class="control-label" id="cleanup-label">Clean up as</span>
           <div class="segments" role="radiogroup" aria-labelledby="cleanup-label">
-            <button type="button" role="radio" aria-checked="true" data-preset="paragraph">Paragraph</button>
-            <button type="button" role="radio" aria-checked="false" data-preset="code">Code <small>Pro</small></button>
-            <button type="button" role="radio" aria-checked="false" data-preset="table">Table <small>Pro</small></button>
+            <button type="button" role="radio" aria-checked="true" aria-disabled="false" tabindex="0" data-preset="paragraph">Paragraph</button>
+            <button type="button" role="radio" aria-checked="false" aria-disabled="${String(!pro)}" tabindex="-1" data-preset="code">Code <small>Pro</small></button>
+            <button type="button" role="radio" aria-checked="false" aria-disabled="${String(!pro)}" tabindex="-1" data-preset="table">Table <small>Pro</small></button>
           </div>
         </div>
         <label class="switch-row"><input id="markdown" type="checkbox" /> Markdown <small>Pro</small></label>
@@ -60,9 +61,9 @@ app.innerHTML = `
       <div class="output-actions">
         <label class="language-label" for="language">OCR language
           <select id="language">
-            <option value="eng">English · 4.1 MB</option>
-            <option value="spa">Spanish · Pro · 2.2 MB</option>
-            <option value="deu">German · Pro · 4.1 MB</option>
+            <option value="eng">English · 1.89 MiB download</option>
+            <option value="spa">Spanish · Pro · 1.08 MiB download</option>
+            <option value="deu">German · Pro · 0.81 MiB download</option>
           </select>
         </label>
         <button id="copy" class="copy-button" type="button" disabled>Copy text</button>
@@ -82,15 +83,15 @@ app.innerHTML = `
     <img id="capture-image" alt="Your captured screen; drag to select a text region" draggable="false" />
     <div class="capture-shade" aria-hidden="true"></div>
     <div class="selection" id="selection" aria-hidden="true"></div>
-    <div class="capture-instructions"><strong>Drag around the text</strong><span>Arrows move · Shift + arrows resize · Enter reads · Esc cancels</span></div>
+    <div class="capture-instructions"><strong>Drag around the text</strong><span>Arrows move · Shift + arrows resize · Enter reads · Esc cancels</span><span class="capture-feedback" id="capture-feedback" aria-live="assertive"></span></div>
   </div>
 
   <dialog id="license-dialog" aria-labelledby="license-title">
     <form method="dialog" class="dialog-card">
       <button class="dialog-close" value="cancel" aria-label="Close license window">×</button>
       <span class="step">ONE-TIME LICENSE</span>
-      <h2 id="license-title">Sharper cleanup, still local.</h2>
-      <p>Unlock code and table cleanup, Markdown output, and Spanish/German language packs for <strong>$12 once</strong>.</p>
+      <h2 id="license-title">Get more cleanup options</h2>
+      <p>Get code and table cleanup, Markdown output, and Spanish and German language packs for <strong>$12 once</strong>.</p>
       <a class="buy-button" href="https://api.sociobot.in/api/v1/products/screen-text-drop/checkout">Buy Screen Text Drop Pro</a>
       <label for="license-token">Have a license? Paste it</label>
       <div class="restore-row"><input id="license-token" autocomplete="off" /><button type="button" id="restore">Verify</button></div>
@@ -109,6 +110,7 @@ const progress = document.querySelector<HTMLSpanElement>('#progress-bar')!;
 const layer = document.querySelector<HTMLDivElement>('#capture-layer')!;
 const captureImage = document.querySelector<HTMLImageElement>('#capture-image')!;
 const selection = document.querySelector<HTMLDivElement>('#selection')!;
+const captureFeedback = document.querySelector<HTMLSpanElement>('#capture-feedback')!;
 
 function announce(message: string, kind: 'ready' | 'working' | 'error' = 'ready') {
   live.textContent = message;
@@ -122,20 +124,59 @@ function setOutput(text: string) {
   copy.disabled = !text;
 }
 
+function renderProState(): void {
+  document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((item) => {
+    item.setAttribute('aria-disabled', String(item.dataset.preset !== 'paragraph' && !pro));
+  });
+  const licenseButton = document.querySelector<HTMLButtonElement>('#license-open');
+  if (licenseButton) licenseButton.textContent = pro ? 'Pro unlocked' : 'Unlock Pro';
+}
+
+function selectPreset(button: HTMLButtonElement): void {
+  preset = button.dataset.preset as Preset;
+  document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((item) => {
+    const selected = item === button;
+    item.setAttribute('aria-checked', String(selected));
+    item.tabIndex = selected ? 0 : -1;
+  });
+}
+
+function discardCapture(): void {
+  if (sourceObjectUrl) URL.revokeObjectURL(sourceObjectUrl);
+  sourceObjectUrl = null;
+  sourceImage = '';
+  captureImage.removeAttribute('src');
+  start = null;
+  end = null;
+  selection.style.display = 'none';
+  captureFeedback.textContent = '';
+}
+
 async function cropAndRead() {
   if (!start || !end || !sourceImage) return;
   const left = Math.min(start.x, end.x), top = Math.min(start.y, end.y);
   const width = Math.abs(end.x - start.x), height = Math.abs(end.y - start.y);
-  if (width < 12 || height < 12) { announce('Selection is too small. Drag a larger region.', 'error'); return; }
+  if (width < 12 || height < 12) {
+    const message = 'Selection is too small. Drag a larger region.';
+    captureFeedback.textContent = message;
+    announce(message, 'error');
+    return;
+  }
   const image = new Image();
   image.src = sourceImage;
-  await image.decode();
-  const scaleX = image.naturalWidth / window.innerWidth;
-  const scaleY = image.naturalHeight / window.innerHeight;
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(width * scaleX);
-  canvas.height = Math.round(height * scaleY);
-  canvas.getContext('2d')!.drawImage(image, left * scaleX, top * scaleY, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+  try {
+    await image.decode();
+    const scaleX = image.naturalWidth / window.innerWidth;
+    const scaleY = image.naturalHeight / window.innerHeight;
+    canvas.width = Math.round(width * scaleX);
+    canvas.height = Math.round(height * scaleY);
+    canvas.getContext('2d')!.drawImage(image, left * scaleX, top * scaleY, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+  } catch {
+    await closeCapture();
+    announce('The image could not be opened. Choose a PNG, JPEG, or WebP image and try again.', 'error');
+    return;
+  }
   await closeCapture();
   progressShell.hidden = false;
   progress.style.width = '4%';
@@ -143,7 +184,6 @@ async function cropAndRead() {
   try {
     const language = document.querySelector<HTMLSelectElement>('#language')!.value;
     const raw = await recognizeImage(canvas.toDataURL('image/png'), language, (value) => progress.style.width = `${Math.max(4, value * 100)}%`);
-    sourceImage = '';
     const cleaned = cleanText(raw, preset);
     setOutput(cleaned);
     announce(cleaned ? 'Text ready' : 'No text found — try a tighter, higher-contrast region.', cleaned ? 'ready' : 'error');
@@ -155,17 +195,26 @@ async function cropAndRead() {
 }
 
 async function openCapture(dataUrl: string) {
+  discardCapture();
   sourceImage = dataUrl;
+  sourceObjectUrl = dataUrl.startsWith('blob:') ? dataUrl : null;
   captureImage.src = dataUrl;
-  layer.hidden = false;
-  if (isTauri) {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    await getCurrentWindow().setFullscreen(true);
+  try {
+    await captureImage.decode();
+    layer.hidden = false;
+    if (isTauri) {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().setFullscreen(true);
+    }
+    start = { x: window.innerWidth * .2, y: window.innerHeight * .2 };
+    end = { x: window.innerWidth * .8, y: window.innerHeight * .8 };
+    paintSelection();
+    layer.focus();
+  } catch {
+    layer.hidden = true;
+    discardCapture();
+    announce('The image could not be opened. Choose a PNG, JPEG, or WebP image and try again.', 'error');
   }
-  start = { x: window.innerWidth * .2, y: window.innerHeight * .2 };
-  end = { x: window.innerWidth * .8, y: window.innerHeight * .8 };
-  paintSelection();
-  layer.focus();
 }
 
 function paintSelection() {
@@ -179,9 +228,13 @@ function paintSelection() {
 
 async function closeCapture() {
   layer.hidden = true;
-  if (isTauri) {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    await getCurrentWindow().setFullscreen(false);
+  try {
+    if (isTauri) {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().setFullscreen(false);
+    }
+  } finally {
+    discardCapture();
   }
 }
 
@@ -210,15 +263,24 @@ async function captureScreen() {
 }
 
 document.querySelector('#capture')!.addEventListener('click', captureScreen);
+if (!isTauri) {
+  window.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.code === 'Digit2' && layer.hidden) {
+      event.preventDefault();
+      void captureScreen();
+    }
+  });
+}
 document.querySelector('#load-sample')!.addEventListener('click', () => {
-  preset = 'paragraph';
-  document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((item) => item.setAttribute('aria-checked', String(item.dataset.preset === 'paragraph')));
+  selectPreset(document.querySelector<HTMLButtonElement>('[data-preset="paragraph"]')!);
   setOutput('The route parser strips the utm_source value. Keep the query string when you copy the support link.');
   announce('Sample project loaded. This sample is not saved.');
 });
 document.querySelector<HTMLInputElement>('#image-file')!.addEventListener('change', async (event) => {
-  const file = (event.target as HTMLInputElement).files?.[0];
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (file) await openCapture(URL.createObjectURL(file));
+  input.value = '';
 });
 window.addEventListener('paste', async (event) => {
   const image = [...(event.clipboardData?.files ?? [])].find((file) => file.type.startsWith('image/'));
@@ -258,15 +320,17 @@ window.addEventListener('keydown', (event) => {
 document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) => button.addEventListener('click', () => {
   const next = button.dataset.preset as Preset;
   if (next !== 'paragraph' && !pro) { (document.querySelector('#license-dialog') as HTMLDialogElement).showModal(); return; }
-  preset = next;
-  document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((item) => item.setAttribute('aria-checked', String(item === button)));
+  selectPreset(button);
 }));
 document.querySelector('.segments')!.addEventListener('keydown', (event) => {
   if (!(event instanceof KeyboardEvent) || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
   event.preventDefault();
-  const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-preset]')];
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-preset]')]
+    .filter((button) => button.getAttribute('aria-disabled') !== 'true');
   const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
-  buttons[(current + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length].focus();
+  const next = buttons[(current + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length];
+  next.focus();
+  next.click();
 });
 
 document.querySelector<HTMLInputElement>('#markdown')!.addEventListener('change', (event) => {
@@ -297,12 +361,12 @@ document.querySelector('#restore')!.addEventListener('click', async () => {
   const message = document.querySelector<HTMLParagraphElement>('#license-status')!;
   if (!token.trim()) { message.textContent = 'Paste a license token first.'; return; }
   saveLicense(token); message.textContent = 'Checking license…';
-  const state = await verifyLicense(true); pro = state.unlocked;
+  const state = await verifyLicense(true); pro = state.unlocked; renderProState();
   message.textContent = pro ? 'Pro is unlocked on this device.' : state.notice ?? 'That license could not be verified.';
 });
 
 captureReturnedLicense();
-void verifyLicense().then((state) => { pro = state.unlocked; if (state.notice) announce(state.notice, 'error'); });
+void verifyLicense().then((state) => { pro = state.unlocked; renderProState(); if (state.notice) announce(state.notice, 'error'); });
 if (isTauri) {
   void import('@tauri-apps/api/event').then(({ listen }) => listen('capture-requested', captureScreen));
   document.querySelectorAll<HTMLAnchorElement>('a[href^="http"]').forEach((anchor) => anchor.addEventListener('click', async (event) => {

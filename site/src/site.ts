@@ -1,6 +1,8 @@
 import './styles.css';
 
 const releaseBase = 'https://github.com/B-Divyesh/sf-screen-text-drop/releases/latest';
+const releaseApi = 'https://api.github.com/repos/B-Divyesh/sf-screen-text-drop/releases/latest';
+const releaseCacheKey = 'screen-text-drop:release';
 const demoKey = 'demo:screen-text-drop:sample';
 const demoText: Record<string, string> = {
   paragraph: 'The route parser strips the utm_source value. Keep the query string when you copy the support link.',
@@ -25,9 +27,19 @@ async function resolveDownload() {
   if (platformName) platformName.textContent = names[key];
   if (['localhost', '127.0.0.1'].includes(location.hostname)) return;
   try {
-    const response = await fetch('https://api.github.com/repos/B-Divyesh/sf-screen-text-drop/releases/latest', { cache: 'no-store' });
-    if (!response.ok) throw new Error('release lookup failed');
-    const release = await response.json() as { tag_name: string; assets: { name: string; browser_download_url: string }[] };
+    type Release = { tag_name: string; assets: { name: string; browser_download_url: string }[] };
+    type CachedRelease = { checkedAt: number; release: Release };
+    let release: Release | null = null;
+    try {
+      const cached = JSON.parse(localStorage.getItem(releaseCacheKey) ?? 'null') as CachedRelease | null;
+      if (cached && Date.now() - cached.checkedAt < 3_600_000) release = cached.release;
+    } catch { /* fetch a fresh release */ }
+    if (!release) {
+      const response = await fetch(releaseApi, { cache: 'no-store' });
+      if (!response.ok) throw new Error('release lookup failed');
+      release = await response.json() as Release;
+      localStorage.setItem(releaseCacheKey, JSON.stringify({ checkedAt: Date.now(), release }));
+    }
     const patterns: Record<string, RegExp> = { 'macos-arm64': /^macos-arm64-.*\.dmg$/i, 'macos-x64': /^macos-x64-.*\.dmg$/i, 'windows-x64': /^windows-x64-.*\.msi$/i, 'linux-x64': /^linux-x64-.*\.AppImage$/i };
     const asset = release.assets.find((item) => patterns[key].test(item.name));
     if (!asset) throw new Error('matching asset unavailable');
@@ -46,13 +58,29 @@ function setupDemo() {
   if (!output) return;
   const feedback = document.querySelector<HTMLElement>('#demo-feedback');
   const state = document.querySelector<HTMLElement>('#demo-state');
+  const isSandbox = Boolean(document.querySelector('#reset-demo'));
   const render = (kind = 'paragraph') => {
     output.textContent = demoText[kind];
-    localStorage.setItem(demoKey, kind);
-    document.querySelectorAll<HTMLButtonElement>('[data-demo]').forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.demo === kind)));
+    if (isSandbox) localStorage.setItem(demoKey, kind);
+    document.querySelectorAll<HTMLButtonElement>('[data-demo]').forEach((tab) => {
+      const selected = tab.dataset.demo === kind;
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    });
   };
-  render(localStorage.getItem(demoKey) ?? 'paragraph');
-  document.querySelectorAll<HTMLButtonElement>('[data-demo]').forEach((button) => button.addEventListener('click', () => render(button.dataset.demo ?? 'paragraph')));
+  render(isSandbox ? localStorage.getItem(demoKey) ?? 'paragraph' : 'paragraph');
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>('[data-demo]')];
+  tabs.forEach((button) => button.addEventListener('click', () => render(button.dataset.demo ?? 'paragraph')));
+  document.querySelector('.demo-tabs')?.addEventListener('keydown', (event) => {
+    if (!(event instanceof KeyboardEvent) || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const current = Math.max(0, tabs.indexOf(document.activeElement as HTMLButtonElement));
+    const nextIndex = event.key === 'Home' ? 0
+      : event.key === 'End' ? tabs.length - 1
+        : (current + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1) + tabs.length) % tabs.length;
+    tabs[nextIndex].focus();
+    render(tabs[nextIndex].dataset.demo ?? 'paragraph');
+  });
   document.querySelector<HTMLButtonElement>('#reset-demo')?.addEventListener('click', () => {
     localStorage.removeItem(demoKey);
     render();
@@ -72,10 +100,17 @@ function setupDemo() {
 
 function setupRestoreDialog() {
   const dialog = document.querySelector<HTMLDialogElement>('#restore-dialog');
+  const input = document.querySelector<HTMLInputElement>('#license-token');
+  const message = document.querySelector<HTMLElement>('#license-message');
+  const copyButton = document.querySelector<HTMLButtonElement>('#copy-returned-license');
+  const showTransfer = (token: string, text: string) => {
+    if (input) input.value = token;
+    if (copyButton) copyButton.hidden = false;
+    if (message) message.textContent = text;
+  };
   document.querySelector('#restore-open')?.addEventListener('click', () => dialog?.showModal());
   document.querySelector('#verify-license')?.addEventListener('click', async () => {
-    const token = document.querySelector<HTMLInputElement>('#license-token')?.value.trim() ?? '';
-    const message = document.querySelector<HTMLElement>('#license-message');
+    const token = input?.value.trim() ?? '';
     if (!token) { if (message) message.textContent = 'Paste a license token first.'; return; }
     if (message) message.textContent = 'Checking…';
     try {
@@ -84,15 +119,28 @@ function setupRestoreDialog() {
       if (!response.ok || !verdict.valid) throw new Error('invalid license');
       localStorage.setItem('sb_license:screen-text-drop', token);
       localStorage.setItem('sb_license:screen-text-drop:verdict', JSON.stringify({ valid: true, checkedAt: Date.now() }));
-      if (message) message.textContent = 'License saved. Open the app to use Pro.';
+      showTransfer(token, 'License verified. Copy it, open Screen Text Drop, choose Unlock Pro, and paste it there.');
     } catch {
       if (message) message.textContent = 'That license could not be verified. Check the token and try again.';
+    }
+  });
+  copyButton?.addEventListener('click', async () => {
+    const token = input?.value.trim() ?? '';
+    if (!token) return;
+    try {
+      await navigator.clipboard.writeText(token);
+      if (message) message.textContent = 'License copied. Open Screen Text Drop, choose Unlock Pro, paste it, then select Verify.';
+    } catch {
+      if (message) message.textContent = 'Select the license above and copy it. Then paste it in the app under Unlock Pro.';
     }
   });
   const queryLicense = new URL(location.href).searchParams.get('license');
   if (queryLicense) {
     localStorage.setItem('sb_license:screen-text-drop', queryLicense);
-    history.replaceState({}, '', location.pathname);
+    const cleanUrl = new URL(location.href);
+    cleanUrl.searchParams.delete('license');
+    history.replaceState({}, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+    showTransfer(queryLicense, 'Purchase returned. Copy this license, open Screen Text Drop, choose Unlock Pro, and paste it there.');
     dialog?.showModal();
   }
 }

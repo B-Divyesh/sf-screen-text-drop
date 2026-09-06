@@ -44,14 +44,25 @@ export async function verifyLicense(force = false): Promise<LicenseState> {
     const verdict = isTauri
       ? await import('@tauri-apps/api/core').then(({ invoke }) => invoke<{ valid: boolean }>('verify_license', { token }))
       : await fetch(`${API}/verify?license=${encodeURIComponent(token)}`).then(async (response) => {
-        if (!response.ok) throw new Error('verification unavailable');
+        if (response.status === 429) {
+          const retry = response.headers.get('Retry-After');
+          throw new Error(retry ? `Try again in ${retry} seconds.` : 'Try again shortly.');
+        }
+        if (!response.ok) throw new Error('Try again when you are online.');
         return response.json() as Promise<{ valid: boolean }>;
       });
     localStorage.setItem(VERDICT_KEY, JSON.stringify({ valid: verdict.valid, checkedAt: Date.now() }));
     return verdict.valid
       ? { unlocked: true }
       : { unlocked: false, notice: 'License no longer active. Your free tools still work.' };
-  } catch {
-    return cachedLicenseState();
+  } catch (error) {
+    const cached = cachedLicenseState();
+    if (cached.unlocked) return cached;
+    return {
+      unlocked: false,
+      notice: error instanceof Error
+        ? `License verification is unavailable. ${error.message}`
+        : 'License verification is unavailable. Try again when you are online.',
+    };
   }
 }

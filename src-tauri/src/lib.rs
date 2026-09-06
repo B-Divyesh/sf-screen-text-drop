@@ -1,10 +1,10 @@
 use base64::Engine;
+use serde::{Deserialize, Serialize};
 use std::io::Cursor;
-use tauri::{Emitter, Manager};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
+use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
-use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 struct LicenseVerdict {
@@ -21,7 +21,10 @@ fn capture_primary_screen() -> Result<String, String> {
     image::DynamicImage::ImageRgba8(image)
         .write_to(&mut bytes, image::ImageOutputFormat::Png)
         .map_err(|error| error.to_string())?;
-    Ok(format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes.into_inner())))
+    Ok(format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(bytes.into_inner())
+    ))
 }
 
 #[tauri::command]
@@ -42,9 +45,13 @@ async fn verify_license(token: String) -> Result<LicenseVerdict, String> {
         .await
         .map_err(|error| format!("License verification is unavailable: {error}"))?;
     if !response.status().is_success() {
-        return Err(format!("License verification returned {}", response.status()));
+        return Err(format!(
+            "License verification returned {}",
+            response.status()
+        ));
     }
-    response.json::<LicenseVerdict>()
+    response
+        .json::<LicenseVerdict>()
         .await
         .map_err(|error| format!("License verification returned an invalid response: {error}"))
 }
@@ -53,13 +60,15 @@ async fn verify_license(token: String) -> Result<LicenseVerdict, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new()
-            .with_handler(|app, _shortcut, event| {
-                if event.state() == ShortcutState::Pressed {
-                    let _ = app.emit("capture-requested", ());
-                }
-            })
-            .build())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state() == ShortcutState::Pressed {
+                        let _ = app.emit("capture-requested", ());
+                    }
+                })
+                .build(),
+        )
         .setup(|app| {
             app.global_shortcut().register("CommandOrControl+Shift+2")?;
             let capture = MenuItem::with_id(app, "capture", "Capture region", true, None::<&str>)?;
@@ -71,21 +80,35 @@ pub fn run() {
                 .tooltip("Screen Text Drop — local OCR")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
-                    "capture" => { let _ = app.emit("capture-requested", ()); },
-                    "show" => { if let Some(window) = app.get_webview_window("main") { let _ = window.show(); let _ = window.set_focus(); } },
+                    "capture" => {
+                        let _ = app.emit("capture-requested", ());
+                    }
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
                     "quit" => app.exit(0),
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click { .. } = event {
-                        if let Some(window) = tray.app_handle().get_webview_window("main") { let _ = window.show(); let _ = window.set_focus(); }
+                        if let Some(window) = tray.app_handle().get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
                     }
                 })
                 .build(app)?;
             std::mem::forget(tray);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![capture_primary_screen, copy_text, verify_license])
+        .invoke_handler(tauri::generate_handler![
+            capture_primary_screen,
+            copy_text,
+            verify_license
+        ])
         .run(tauri::generate_context!())
         .expect("error while running Screen Text Drop");
 }

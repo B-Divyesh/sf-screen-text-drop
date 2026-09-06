@@ -1,6 +1,6 @@
 [package]
 name = "screen-text-drop"
-version = "0.1.1"
+version = "0.1.2"
 description = "Private, offline region-to-text utility"
 authors = ["Sociobot"]
 license = "MIT"
@@ -24,4 +24,4 @@ base64 = "0.22"
 arboard = "3.6"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "query", "rustls"] }

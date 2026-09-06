@@ -14,4 +14,12 @@ describe('cleanup presets', () => {
     expect(table).toBe('Name\tSize\nEnglish\t4 MB');
     expect(asMarkdown(table, 'table')).toContain('| --- | --- |');
   });
+  it('@claim:cleanup-presets produces paragraph, code, table, and Markdown output', () => {
+    expect(cleanText('Keep this hyphen-\nated paragraph together.', 'paragraph'))
+      .toBe('Keep this hyphenated paragraph together.');
+    expect(asMarkdown(cleanText('const answer = “yes”;', 'code'), 'code'))
+      .toBe('```\nconst answer = "yes";\n```');
+    expect(asMarkdown(cleanText('Item  Owner\nLink  Mina', 'table'), 'table'))
+      .toBe('| Item | Owner |\n| --- | --- |\n| Link | Mina |');
+  });
 });
