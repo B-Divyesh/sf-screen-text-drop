@@ -20,7 +20,7 @@ irm https://screen-text-drop.sociobot.in/install.ps1 | iex
 
 On Linux, the command verifies the AppImage and installs it as `~/.local/bin/screen-text-drop`. On macOS, it creates `~/Downloads` when needed and saves the verified package there.
 
-The v1 binaries are unsigned. On macOS, right-click the package and choose **Open**. On Windows, review the publisher warning and choose **Run anyway**. Every release publishes `SHA256SUMS` beside the builds.
+The v1 binaries are unsigned. On macOS, right-click the package and choose **Open**. On Windows, review the publisher warning and choose **Run anyway**. Release v0.1.2 publishes `SHA256SUMS` beside the builds.
 
 ## What ships
 

@@ -39,8 +39,21 @@ The table covers every complete sentence and sentence-style heading on the landi
 | Turn your next screen region into text. | 7 | Pass |
 | A desktop tool for turning selected screen regions into text. | 10 | Pass |
 | Hero artwork generated for this product. | 6 | Pass |
+| Downloads are being published. | 4 | Pass |
+| Open the release page. | 4 | Pass |
+| Use Pro in the desktop app. | 7 | Pass |
+| Paste a license token first. | 5 | Pass |
+| License verified. | 2 | Pass |
+| Copy it, open Screen Text Drop, choose Unlock Pro, and paste it there. | 13 | Pass |
+| That license could not be verified. | 6 | Pass |
+| Check the token and try again. | 7 | Pass |
+| Purchase returned. | 2 | Pass |
+| License copied. | 2 | Pass |
+| Open Screen Text Drop, choose Unlock Pro, paste it, then select Verify. | 12 | Pass |
+| Select the license above and copy it. | 7 | Pass |
+| Then paste it in the app under Unlock Pro. | 9 | Pass |
 
-Short actions and labels also use direct terms: **Try it with sample data**, **Download for your desktop**, **Copy text**, **Buy Pro once**, **Restore it**, and **Download the desktop app**.
+Short actions and labels also use direct terms: **Try it with sample data**, **Download for your desktop**, **Copy text**, **Buy Pro once**, **Have a license? Restore it**, and **Download the desktop app**.
 
 No sentence exceeds 22 words. The banned-word scan found no use of: leverage, seamless, effortless, robust, powerful, intuitive, reimagine, supercharge, delightful, journey, ecosystem, or AI-powered.
 
