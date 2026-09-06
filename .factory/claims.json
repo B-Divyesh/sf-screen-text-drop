@@ -11,7 +11,7 @@
     "claim": "Demo sample changes are separate from real app and license data, and Reset demo restores the sample.",
     "where": "demo banner, privacy copy, README",
     "test": "npx playwright test --grep @claim:demo-isolated",
-    "sandbox": "a fresh context changes and resets the demo while asserting an unrelated real-data key and the license namespace are untouched"
+    "sandbox": "a fresh context changes and resets the demo, leaves through Start for real, confirms demo data is discarded, and asserts real-data and license namespaces are untouched"
   },
   {
     "id": "demo-offline",

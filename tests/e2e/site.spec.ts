@@ -90,6 +90,11 @@ test('@claim:demo-isolated', async ({ page }) => {
   await expect(page.evaluate(() => localStorage.getItem('real:untouched'))).resolves.toBe('keep');
   await expect(page.evaluate(() => localStorage.getItem('sb_license:screen-text-drop'))).resolves.toBeNull();
   await expect(page.evaluate(() => document.cookie)).resolves.toBe('');
+  await page.getByRole('tab', { name: 'Table' }).click();
+  await page.getByRole('link', { name: 'Start for real' }).click();
+  await expect(page).toHaveURL('/');
+  await expect(page.evaluate(() => localStorage.getItem('demo:screen-text-drop:sample'))).resolves.toBeNull();
+  await expect(page.evaluate(() => localStorage.getItem('real:untouched'))).resolves.toBe('keep');
 });
 
 test('@claim:demo-offline', async ({ browser }) => {

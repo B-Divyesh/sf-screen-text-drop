@@ -87,6 +87,9 @@ function setupDemo() {
     if (feedback) feedback.textContent = 'Sample reset. Your app data was not touched.';
     if (state) state.textContent = '● Reset';
   });
+  document.querySelector<HTMLAnchorElement>('#start-real')?.addEventListener('click', () => {
+    localStorage.removeItem(demoKey);
+  });
   document.querySelector<HTMLButtonElement>('#demo-copy')?.addEventListener('click', async (event) => {
     try {
       await navigator.clipboard.writeText(output.textContent ?? '');
