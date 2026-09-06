@@ -103,5 +103,12 @@
     "where": "landing download, README",
     "test": "npx vitest run --testNamePattern @claim:linux-installer",
     "sandbox": "a temporary consumer home with no Downloads directory installs a local fixture AppImage through the real shell installer, compares bytes, checks executable mode, and runs it"
+  },
+  {
+    "id": "release-artifacts",
+    "claim": "Version 0.1.2 has published macOS, Windows, and Linux installers with a valid manifest and checksums.",
+    "where": "landing download, README",
+    "test": "node scripts/verify-release.mjs 0.1.2 2263f50a1fd900f84f84b85ec1d844f74457a81b",
+    "sandbox": "the public GitHub release tag is resolved to the repair commit; every required platform asset and manifest entry is checked; the smallest installer is downloaded and hashed against SHA256SUMS"
   }
 ]
